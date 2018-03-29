@@ -1,0 +1,22 @@
+{
+  "name": "jeffsocal/proxy-sci",
+  "type": "library",
+  "description": "PHP implementation of functions and classes for math and science",
+  "keywords": ["Boostrap"],
+  "homepage": "https://github.com/jeffsocal/proxy-sci/",
+  "require": {
+    "php": ">=7.0.0"
+  },
+  "autoload": {
+    "psr-4": { "ProxySci\\": "src/" }
+  },
+  "authors": [
+    {
+      "name": "Jeff Jones",
+      "email": "jeff@socalbioinformatics.com",
+      "homepage": "https://github.com/jeffsocal",
+      "role": "Developer"
+    }
+  ],
+  "license": "MIT"
+}
