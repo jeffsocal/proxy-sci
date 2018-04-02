@@ -37,7 +37,7 @@ class Peptide extends ReadDelim
     function __construct()
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
-        parent::__construct(get_include_path()  . $ini['aminos_path']);
+        parent::__construct(get_include_path() . $ini['aminos_path']);
         
         $this->atom = new Mass();
         

@@ -17,8 +17,8 @@ class Mass extends ReadDelim
 
     function __construct()
     {
-        $ini = parse_ini_file(get_include_path() .'ini/molecular.ini');
-        parent::__construct(get_include_path() .$ini['atomic_path']);
+        $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
+        parent::__construct(get_include_path() . $ini['atomic_path']);
         $this->array_atomic_mass = $this->getTableArray();
     }
 
