@@ -6,7 +6,7 @@
  *
  * See LICENSE.txt for the license.
  */
-namespace ProxySci\atomic;
+namespace ProxySci\Atomic;
 
 use ProxyIO\File\Delim\ReadDelim;
 
