@@ -8,6 +8,8 @@
  */
 namespace ProxySci\Omics\Proteomics;
 
+use ProxyTime\ProgressTimer;
+
 class Fasta
 {
 
@@ -144,6 +146,46 @@ class Fasta
             // error opening the file.
         }
         return $protein_hits;
+    }
+
+    function getAllEntries($progress = FALSE)
+    {
+        $entry = FALSE;
+        $parsed = [];
+        
+        $tmr = new ProgressTimer();
+        
+        $tmr->fractionalTimerSize(556826);
+        $tmr->fractionalTimerStart("Parse FASTA");
+        
+        $handle = fopen($this->fasta_file_path, "r");
+        if ($handle) {
+            while (($line = fgets($handle)) !== false) {
+                /*
+                 * process the line read.
+                 */
+                if (preg_match('/^>/', $line)) {
+                    if (! is_false($entry)) {
+                        $tmr->fractionalTimerPrint();
+                        $parsed[] = $this->parseFastaEntry($entry);
+                    }
+                    
+                    $entry = trim($line, '>');
+                } else {
+                    $entry .= $line;
+                }
+            }
+            /*
+             * get the last one
+             */
+            $parsed[] = $this->parseFastaEntry($entry);
+            
+            fclose($handle);
+        } else {
+            // error opening the file.
+        }
+        
+        return $parsed;
     }
 }
 ?>
