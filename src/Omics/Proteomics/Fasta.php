@@ -153,10 +153,12 @@ class Fasta
         $entry = FALSE;
         $parsed = [];
         
-        $tmr = new ProgressTimer();
-        
-        $tmr->fractionalTimerSize(556826);
-        $tmr->fractionalTimerStart("Parse FASTA");
+        if (! is_false($progress)) {
+            $tmr = new ProgressTimer();
+            
+            $tmr->fractionalTimerSize(556826);
+            $tmr->fractionalTimerStart("Parse FASTA");
+        }
         
         $handle = fopen($this->fasta_file_path, "r");
         if ($handle) {
@@ -166,7 +168,9 @@ class Fasta
                  */
                 if (preg_match('/^>/', $line)) {
                     if (! is_false($entry)) {
-                        $tmr->fractionalTimerPrint();
+                        if (! is_false($progress))
+                            $tmr->fractionalTimerPrint();
+                        
                         $parsed[] = $this->parseFastaEntry($entry);
                     }
                     

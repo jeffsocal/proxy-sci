@@ -27,9 +27,13 @@ class Digest extends Protein
         $this->lengthUpperLimit = $high;
     }
 
-    public function getPeptides($sequence)
+    public function getPeptides($sequence, $sub_il = FALSE)
     {
+        
         $sequence = preg_replace("/[\n\r\t\s\.\-\*]/", '', $sequence);
+        
+        if(is_true($sub_il))
+            $sequence = preg_replace("/L/", "I", $sequence);
         
         /*
          * get all regular peptides

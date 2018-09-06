@@ -21,18 +21,20 @@ class Peptide extends ReadDelim
     protected $mass_H;
 
     protected $mass_O;
+    
+    protected $mass_N;
 
     protected $array_aa_data;
 
     protected $array_aa_metrics;
 
-    protected $array_aa_exactmass;
+    protected $arr_aa_em;
 
-    private $seq_regex = "/[a-zA-Z]|\[.+?\]/";
+    protected $seq_regex = "/[a-zA-Z]|\[.+?\]/";
 
-    private $seq_mod_regex = "/[a-zA-Z]|[\-\+]*\d+\.*\d*/";
+    protected $seq_mod_regex = "/[a-zA-Z]|[\-\+]*\d+\.*\d*/";
 
-    private $atom;
+    protected $atom;
 
     function __construct()
     {
@@ -47,6 +49,7 @@ class Peptide extends ReadDelim
         $this->mass_isotope = 1.0025;
         $this->mass_H = $this->atom->getMolecularWeight('H');
         $this->mass_O = $this->atom->getMolecularWeight('O');
+        $this->mass_N = $this->atom->getMolecularWeight('N');
         
         $this->setExactMassAminoAcid();
     }
@@ -56,35 +59,35 @@ class Peptide extends ReadDelim
     {
         
         //
-        $this->array_aa_exactmass = array();
+        $this->arr_aa_em = array();
         
         //
         $water = $this->mass_O + $this->mass_H * 2;
         foreach ($this->array_aa_data['1_letter'] as $n => $l) {
-            $this->array_aa_exactmass[$l] = $this->atom->getMolecularWeight($this->array_aa_data['Res_Formula'][$n]);
+            $this->arr_aa_em[$l] = $this->atom->getMolecularWeight($this->array_aa_data['Res_Formula'][$n]);
         }
         
         // C3H7NO2Se - Selenocysteine
-        $this->array_aa_exactmass['U'] = $this->atom->getMolecularWeight('C3H7NO2Se');
-        $this->array_aa_exactmass['Z'] = $this->atom->getMolecularWeight('C3H7NO2Se');
-        $this->array_aa_exactmass['&'] = $this->array_aa_exactmass['L'];
-        $this->array_aa_exactmass['B'] = ($this->array_aa_exactmass['N'] + $this->array_aa_exactmass['D']) / 2;
-        $this->array_aa_exactmass['Z'] = ($this->array_aa_exactmass['E'] + $this->array_aa_exactmass['Q']) / 2;
-        $this->array_aa_exactmass['J'] = ($this->array_aa_exactmass['I'] + $this->array_aa_exactmass['L']) / 2;
-        $this->array_aa_exactmass['X'] = ($this->array_aa_exactmass['Q'] + $this->array_aa_exactmass['K']) / 2;
-        $this->array_aa_exactmass['c'] = $this->mass_O + $this->mass_H;
-        $this->array_aa_exactmass['n'] = $this->mass_H;
-        $this->array_aa_exactmass['p'] = $this->mass_proton;
+        $this->arr_aa_em['U'] = $this->atom->getMolecularWeight('C3H7NO2Se');
+        $this->arr_aa_em['Z'] = $this->atom->getMolecularWeight('C3H7NO2Se');
+        $this->arr_aa_em['&'] = $this->arr_aa_em['L'];
+        $this->arr_aa_em['B'] = ($this->arr_aa_em['N'] + $this->arr_aa_em['D']) / 2;
+        $this->arr_aa_em['Z'] = ($this->arr_aa_em['E'] + $this->arr_aa_em['Q']) / 2;
+        $this->arr_aa_em['J'] = ($this->arr_aa_em['I'] + $this->arr_aa_em['L']) / 2;
+        $this->arr_aa_em['X'] = ($this->arr_aa_em['Q'] + $this->arr_aa_em['K']) / 2;
+        $this->arr_aa_em['c'] = $this->mass_O + $this->mass_H;
+        $this->arr_aa_em['n'] = $this->mass_H;
+        $this->arr_aa_em['p'] = $this->mass_proton;
         
         // common PTMs
         // [C57.021]
-        $this->array_aa_exactmass['z'] = $this->array_aa_exactmass['C'] + 57.021;
+        $this->arr_aa_em['z'] = $this->arr_aa_em['C'] + 57.021;
         // [K42.011]
-        $this->array_aa_exactmass['y'] = $this->array_aa_exactmass['K'] + 42.011;
+        $this->arr_aa_em['y'] = $this->arr_aa_em['K'] + 42.011;
         // [K43.006]
-        $this->array_aa_exactmass['x'] = $this->array_aa_exactmass['K'] + 43.006;
+        $this->arr_aa_em['x'] = $this->arr_aa_em['K'] + 43.006;
         // [M15.995]
-        $this->array_aa_exactmass['w'] = $this->array_aa_exactmass['M'] + 15.995;
+        $this->arr_aa_em['w'] = $this->arr_aa_em['M'] + 15.995;
         
         /*
          * Ambiguous Amino Acids 3-Letter 1-Letter
@@ -100,15 +103,15 @@ class Peptide extends ReadDelim
         if (is_numeric($component))
             return $component;
         
-        if (key_exists($component, $this->array_aa_exactmass))
-            return $this->array_aa_exactmass[$component];
+        if (key_exists($component, $this->arr_aa_em))
+            return $this->arr_aa_em[$component];
         
         return 0;
     }
 
     private function getExactMassArray()
     {
-        return $this->array_aa_exactmass;
+        return $this->arr_aa_em;
     }
 
     protected function getSeqArray($aa, $regex = "[A-Z]")
