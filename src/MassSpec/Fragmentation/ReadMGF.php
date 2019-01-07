@@ -39,12 +39,26 @@ class ReadMGF
             $i = preg_filter("/^[1-9]/", '$0', $e);
             $m = preg_filter("/^[A-Z]/", '$0', $e);
             
+            if (count($i) < 3) {
+                unset($contents[$n]);
+                continue;
+            }
+            
             $csv = function ($str) {
                 return explode(" ", $str);
             };
             
             $meta = function ($str) {
                 $m = explode("=", $str);
+                
+                if (! key_exists(1, $m))
+                    $m[1] = '';
+                
+                if (count($m) > 2) {
+                    for ($n = 2; $n < count($m); $n ++)
+                        $m[1] .= "=" . $m[$n];
+                }
+                
                 return array(
                     $m[0] => $m[1]
                 );
@@ -58,18 +72,19 @@ class ReadMGF
             }
             
             $spec = array_rowtocol(array_map($csv, $i));
-            $spec['mz'] = $spec[0];
-            $spec['int'] = $spec[1];
+            $spec['mz'] = array_values($spec[0]);
+            $spec['int'] = array_values($spec[1]);
+            
             unset($spec[0], $spec[1]);
             $contents[$n]['spec'] = $spec;
         }
         
         return $contents;
     }
-    
-    function getData(){
+
+    function getData()
+    {
         return $this->data;
     }
-    
 }
 ?>

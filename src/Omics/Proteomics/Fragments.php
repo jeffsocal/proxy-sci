@@ -30,8 +30,8 @@ class Fragments extends Peptide
         // $this->m_int = 223.1347;
         // $this->m_slp = 1.000512;
         
-        $this->m_int = - 77.01891;
-        $this->m_slp = 0.01000512;
+        $this->m_int = - 77.01891391;
+        $this->m_slp = 0.01000512049;
         
         parent::__construct();
     }
@@ -96,10 +96,10 @@ class Fragments extends Peptide
             if (preg_match("/[czaA-Z]\d/", $n))
                 continue;
             
-            if (strstr($n, "y") & strstr($this->frag_series, 'z'))
+            if (strstr($n, "y") and strstr($this->frag_series, 'z'))
                 $array_frags[str_replace('y', 'z', $n)] = $v - ($this->mass_H * 2 + $this->mass_N);
             
-            if (strstr($n, "b") & strstr($this->frag_series, 'c'))
+            if (strstr($n, "b") and strstr($this->frag_series, 'c'))
                 $array_frags[str_replace('b', 'c', $n)] = $v + ($this->mass_H * 3 + $this->mass_N);
             
             if (strstr($this->frag_decay, 'a'))
@@ -132,22 +132,36 @@ class Fragments extends Peptide
     {
         $array = $this->getFragmentMassArray($aa);
         
+        /*
+         * remove values with highly variable mass defect differences
+         */
+        $array = array_filter($array, function ($x) {
+            return ($x > 224);
+        });
+        
         return array_map(array(
             $this,
-            'integerToHash'
+            'massToHash'
         ), $array);
     }
 
-    public function integerToHash($int)
+    public function massToHash($float, $z_detect = true)
     {
-        $val = floor(($int - $this->m_int) / $this->m_slp);
-        
-        // return $val;
-        
-        // $val = str_pad($val, 5, '0', STR_PAD_LEFT);
-        // return hash('crc32b', $val);
-        
-        return base26_encode($val);
+        if (is_true($z_detect)) {
+            $hash = round(($float - $this->m_int) / $this->m_slp / 50) * 50;
+            if (preg_match("/50$/", $hash))
+                $hash = $hash * 2 - 7800;
+        } else {
+            $hash = round(($float - $this->m_int) / $this->m_slp / 100) * 100;
+        }
+        // echo "WTF " . $hash . PHP_EOL;
+        return base26_encode($hash);
+    }
+
+    public function hashToMass($hash)
+    {
+        $int = base26_decode($hash);
+        return $int * $this->m_slp + $this->m_int;
     }
 }
 
@@ -167,7 +181,7 @@ class Fragments extends Peptide
  * NO: 1
  * PG: 49-73
  * YR: 1995
- * CP: Copyright � 1995 John Wiley & Sons, Inc.
+ * CP: Copyright 1995 John Wiley & Sons, Inc.
  * ON: 1098-2787
  * PN: 0277-7037
  * AD: Biogen Inc., 14 Cambridge Center, Cambridge, Massachusetts 02142
@@ -206,10 +220,10 @@ class Fragments extends Peptide
  * Type Neutral Mr
  * a [N]+[M]-CHO
  * a* a-NH3
- * a� a-H2O
+ * a a-H2O
  * b [N]+[M]-H
  * b* b-NH3
- * b� b-H2O
+ * b b-H2O
  * c [N]+[M]+NH2
  * d a - partial side chain
  * v y - complete side chain
@@ -217,7 +231,7 @@ class Fragments extends Peptide
  * x [C]+[M]+CO-H
  * y [C]+[M]+H
  * y* y-NH3
- * y� y-H2O
+ * y y-H2O
  * z [C]+[M]-NH2
  */
 

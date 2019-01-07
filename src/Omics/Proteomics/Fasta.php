@@ -17,15 +17,19 @@ class Fasta
 
     private $regex_array;
 
-    public function __construct()
+    public function __construct($source = 'uniprot')
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
-        $this->fasta_file_path = get_include_path() . $ini['fasta_path'];
+        $this->fasta_file_path = $ini['fasta_path'];
+        
+        $source_regex = 'uniprot';
+        if (preg_match("/uniref/", $source))
+            $source_regex = 'uniref';
         
         $this->regex_array = array();
         foreach ($ini as $key => $value) {
-            if (strstr($key, 'fasta_regex'))
-                $this->regex_array[str_replace('fasta_regex_', '', $key)] = $value;
+            if (strstr($key, $source_regex . '_regex_'))
+                $this->regex_array[str_replace($source_regex . '_regex_', '', $key)] = $value;
         }
     }
 
@@ -45,7 +49,7 @@ class Fasta
             preg_match('/' . $regex_val . '/', $entry, $regex);
             
             if (key_exists(0, $regex))
-                $array[$regex_var] = trim(preg_replace('/\n/', '', $regex[0]));
+                $array[$regex_var] = trim(preg_replace('/\w+\=|\n/', '', $regex[0]));
         }
         return $array;
     }
@@ -156,8 +160,8 @@ class Fasta
         if (! is_false($progress)) {
             $tmr = new ProgressTimer();
             
-            $tmr->fractionalTimerSize(556826);
-            $tmr->fractionalTimerStart("Parse FASTA");
+            $tmr->proTimerSize(556825);
+            $tmr->proTimerStart("Parse FASTA");
         }
         
         $handle = fopen($this->fasta_file_path, "r");
@@ -169,7 +173,7 @@ class Fasta
                 if (preg_match('/^>/', $line)) {
                     if (! is_false($entry)) {
                         if (! is_false($progress))
-                            $tmr->fractionalTimerPrint();
+                            $tmr->proTimerPrint();
                         
                         $parsed[] = $this->parseFastaEntry($entry);
                     }
