@@ -8,46 +8,46 @@
  */
 namespace ProxySci\Omics\Proteomics;
 
-use ProxyIO\File\Delim\ReadDelim;
 use function BenTools\CartesianProduct\cartesian_product;
 
 class PeptideModifications extends Peptide
 {
 
-    private $table_unimod;
+    private $array_unimod;
 
     private $max_concur;
 
     private $max_children;
 
-    public function __construct($ui_mods = 'min')
+    public function __construct($ini_array = false)
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
-        $unicsv_path = get_include_path() . $ini['unimod_path'] . $ui_mods . '.csv';
+        $this->array_unimod = parse_json_file(get_include_path() . $ini['unimod_path']);
         
-        $this->max_concur = $ini['max_concur'];
+        $this->max_concur = $ini['max_concurrent'];
         $this->max_children = $ini['max_children'];
         
-        $csv = new ReadDelim($unicsv_path);
+        if (is_false($ini_array))
+            return null;
         
-        $this->table_unimod = $csv->getTableArray();
-    }
-
-    public function getPeptideMods()
-    {
-        return $this->table_unimod;
-    }
-
-    public function getAminosThatHaveMods()
-    {
-        $aa = $this->table_unimod['COM_AMINO'];
-        $aa = array_tostring($aa, ' ', '');
-        $aa = array_unique(explode(" ", $aa));
+        if (key_exists('max_concurrent', $ini_array))
+            $this->max_concur = $ini_array['max_concurrent'];
         
-        $func = function ($x) {
-            return (preg_match("/^[A-Z]$/", $x));
-        };
-        return array_filter($aa, $func);
+        if (key_exists('max_children', $ini_array))
+            $this->max_children = $ini_array['max_children'];
+        
+        if (key_exists('modification_set', $ini_array)) {
+            
+            $key = 'applied_sites';
+            $mod_set = $ini_array['modification_set'];
+            $this->array_unimod = array_intersect_key($this->array_unimod, $mod_set);
+            
+            foreach ($this->array_unimod as $mod => $array) {
+                if (key_exists($key, $mod_set[$mod]))
+                    $this->array_unimod[$mod][$key] = $mod_set[$mod][$key];
+            }
+            
+        }
     }
 
     public function getPTMPeptidesV1($peptide, $n_combs = 2)
