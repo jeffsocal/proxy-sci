@@ -22,7 +22,7 @@ class PeptideModifications extends Peptide
     public function __construct($ini_array = false)
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
-        $this->array_unimod = parse_json_file(get_include_path() . $ini['unimod_path']);
+        $this->array_unimod = parse_json_file($ini['unimod_path']);
         
         $this->max_concur = $ini['max_concurrent'];
         $this->max_children = $ini['max_children'];
