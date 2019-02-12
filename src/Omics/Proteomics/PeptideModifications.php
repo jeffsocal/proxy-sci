@@ -12,17 +12,17 @@ use function BenTools\CartesianProduct\cartesian_product;
 
 class PeptideModifications extends Peptide
 {
-    
+
     private $array_unimod;
-    
+
     private $max_concur;
-    
+
     private $max_children;
-    
+
     private $applied_sites;
-    
+
     private $applied_mods;
-    
+
     public function __construct($ini_array = false)
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
@@ -35,21 +35,21 @@ class PeptideModifications extends Peptide
             
             if (key_exists('max_concurrent', $ini_array))
                 $this->max_concur = $ini_array['max_concurrent'];
+            
+            if (key_exists('max_children', $ini_array))
+                $this->max_children = $ini_array['max_children'];
+            
+            if (key_exists('modification_set', $ini_array)) {
                 
-                if (key_exists('max_children', $ini_array))
-                    $this->max_children = $ini_array['max_children'];
-                    
-                    if (key_exists('modification_set', $ini_array)) {
-                        
-                        $key = 'applied_sites';
-                        $mod_set = $ini_array['modification_set'];
-                        $this->array_unimod = array_intersect_key($this->array_unimod, $mod_set);
-                        
-                        foreach ($this->array_unimod as $mod => $array) {
-                            if (key_exists($key, $mod_set[$mod]))
-                                $this->array_unimod[$mod][$key] = $mod_set[$mod][$key];
-                        }
-                    }
+                $key = 'applied_sites';
+                $mod_set = $ini_array['modification_set'];
+                $this->array_unimod = array_intersect_key($this->array_unimod, $mod_set);
+                
+                foreach ($this->array_unimod as $mod => $array) {
+                    if (key_exists($key, $mod_set[$mod]))
+                        $this->array_unimod[$mod][$key] = $mod_set[$mod][$key];
+                }
+            }
         }
         /*
          * create an array of where modifications are applied
@@ -71,7 +71,7 @@ class PeptideModifications extends Peptide
             }
         }
     }
-    
+
     public function getPTMPeptidesV1($peptide, $max_concur = 2)
     {
         $ps = str_split($peptide);
@@ -84,13 +84,13 @@ class PeptideModifications extends Peptide
         
         if (count($cp) < 1e7)
             return $this->applyCP($ps, $cp, $max_concur);
-            
-            return $this->applySingle($ps, $ms);
-            
-            // print_r($ms);
-            // print_r($cp->asArray());
+        
+        return $this->applySingle($ps, $ms);
+        
+        // print_r($ms);
+        // print_r($cp->asArray());
     }
-    
+
     private function getPeptidePtmPositionArray($peptide)
     {
         $ps = str_split($peptide);
@@ -102,24 +102,24 @@ class PeptideModifications extends Peptide
             $ps[$n][0] = 0;
             if (key_exists($aa, $this->applied_sites))
                 $ps[$n] = array_merge($ps[$n], $this->applied_sites[$aa]);
-                
-                if ($n == 0 & key_exists('N-TERM', $this->applied_sites))
-                    $ps[$n] = array_merge($ps[$n], $this->applied_sites['N-TERM']);
-                    
-                    if ($n == (count($ps) - 1) & key_exists('C-TERM', $this->applied_sites))
-                        $ps[$n] = array_merge($ps[$n], $this->applied_sites['C-TERM']);
-                        
-                        $ps[$n] = array_unique($ps[$n]);
-                        
-                        if (count($ps[$n]) > 1)
-                            $es[] = $n;
+            
+            if ($n == 0 & key_exists('N-TERM', $this->applied_sites))
+                $ps[$n] = array_merge($ps[$n], $this->applied_sites['N-TERM']);
+            
+            if ($n == (count($ps) - 1) & key_exists('C-TERM', $this->applied_sites))
+                $ps[$n] = array_merge($ps[$n], $this->applied_sites['C-TERM']);
+            
+            $ps[$n] = array_unique($ps[$n]);
+            
+            if (count($ps[$n]) > 1)
+                $es[] = $n;
         }
         
         $out['seq'] = $ps;
         $out['loc'] = $es;
         return $out;
     }
-    
+
     public function getPTMPeptides($peptide)
     {
         $ps = str_split($peptide);
@@ -144,37 +144,37 @@ class PeptideModifications extends Peptide
             
             if (min($num_cp_allaminos, $num_cp_allpossible) > $this->max_children)
                 continue;
+            
+            if ($num_cp_allpossible <= $num_cp_allaminos) {
+                $cp_allpossible = cartesian_product($seq)->asArray();
                 
-                if ($num_cp_allpossible <= $num_cp_allaminos) {
-                    $cp_allpossible = cartesian_product($seq)->asArray();
-                    
-                    return $this->applyCP($ps, $cp_allpossible, $max_concur);
-                }
+                return $this->applyCP($ps, $cp_allpossible, $max_concur);
+            }
+            
+            $cp_allaminos = cartesian_product($bs)->asArray();
+            
+            $ncp = [];
+            foreach ($cp_allaminos as $comb) {
+                sort($comb);
+                $comb = array_unique($comb);
+                $ncp['p' . array_tostring($comb, '', '')] = $comb;
+            }
+            
+            $out = [];
+            foreach ($ncp as $comb) {
                 
-                $cp_allaminos = cartesian_product($bs)->asArray();
+                $this_ms = array_intersect_key($seq, array_flip($comb));
                 
-                $ncp = [];
-                foreach ($cp_allaminos as $comb) {
-                    sort($comb);
-                    $comb = array_unique($comb);
-                    $ncp['p' . array_tostring($comb, '', '')] = $comb;
-                }
+                $cp = cartesian_product($this_ms)->asArray();
                 
-                $out = [];
-                foreach ($ncp as $comb) {
-                    
-                    $this_ms = array_intersect_key($seq, array_flip($comb));
-                    
-                    $cp = cartesian_product($this_ms)->asArray();
-                    
-                    $this_out = $this->applyCP($ps, $cp, $max_concur);
-                    $out = array_unique(array_merge($out, $this_out));
-                }
-                
-                return $out;
+                $this_out = $this->applyCP($ps, $cp, $max_concur);
+                $out = array_unique(array_merge($out, $this_out));
+            }
+            
+            return $out;
         }
     }
-    
+
     private function applyCP($ps, $cp, $max_concur = 3)
     {
         $applied_mods_n = array_flip($this->applied_mods);
@@ -187,37 +187,37 @@ class PeptideModifications extends Peptide
              */
             if (count($w) > $max_concur)
                 continue;
+            
+            $nw = array_count_values($w);
+            $over_max_concur = FALSE;
+            foreach ($nw as $ptm => $count) {
                 
-                $nw = array_count_values($w);
-                $over_max_concur = FALSE;
-                foreach ($nw as $ptm => $count) {
-                    
-                    /*
-                     * check if number of concurrent ptms exceeds allowable local limit
-                     */
-                    
-                    if ($count > $this->array_unimod[$this->applied_mods[$ptm]]['max_concurrent']) {
-                        $over_max_concur = TRUE;
-                        break;
-                    }
+                /*
+                 * check if number of concurrent ptms exceeds allowable local limit
+                 */
+                
+                if ($count > $this->array_unimod[$this->applied_mods[$ptm]]['max_concurrent']) {
+                    $over_max_concur = TRUE;
+                    break;
                 }
-                if (is_true($over_max_concur))
-                    continue;
-                    
-                    /*
-                     * apply the ptms
-                     */
-                    $pst = $ps;
-                    foreach ($w as $key => $ptm) {
-                        
-                        $pst[$key] = "[" . $pst[$key] . round($this->array_unimod[$this->applied_mods[$ptm]]['mass_monoiso'], 2) . "]";
-                    }
-                    $pa[] = array_tostring($pst, "", "");
+            }
+            if (is_true($over_max_concur))
+                continue;
+            
+            /*
+             * apply the ptms
+             */
+            $pst = $ps;
+            foreach ($w as $key => $ptm) {
+                
+                $pst[$key] = "[" . $pst[$key] . round($this->array_unimod[$this->applied_mods[$ptm]]['mass_monoiso'], 2) . "]";
+            }
+            $pa[] = array_tostring($pst, "", "");
         }
         
         return array_values(array_unique($pa));
     }
-    
+
     private function applySingle($ps, $ms)
     {
         $pa = [];
