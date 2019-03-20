@@ -17,6 +17,10 @@ class Fragments extends Peptide
 
     private $frag_decay;
 
+    private $frag_mass_max;
+
+    private $frag_mass_min;
+
     private $m_int;
 
     private $m_slp;
@@ -30,8 +34,14 @@ class Fragments extends Peptide
         // $this->m_int = 223.1347;
         // $this->m_slp = 1.000512;
         
-        $this->m_int = - 77.01891391;
-        $this->m_slp = 0.01000512049;
+        // $this->m_int = - 77.01891391;
+        // $this->m_slp = 0.01000512049;
+        
+        $this->m_int = 584.9754;
+        $this->m_slp = 0.9995063;
+        
+        $this->frag_mass_min = 240;
+        $this->frag_mass_max = 1800;
         
         parent::__construct();
     }
@@ -64,9 +74,14 @@ class Fragments extends Peptide
         $array_seq = $this->getSeqMassArray($aa);
         $peptide_nmass = array_sum($array_seq['mass']);
         
-        $j = sizeof($array_seq['mass']) - 1;
+        $amonia = ($this->mass_H * 3 + $this->mass_N);
+        $water = ($this->mass_H * 2 + $this->mass_O);
+        
+        $j = count($array_seq['mass']) - 1;
         for ($i = 0; $i < $j; $i ++) {
             $b_ion_mass = array_sum(array_slice($array_seq['mass'], 0, $i));
+            $y_ion_mass = array_sum(array_slice($array_seq['mass'], $i)) + $this->mass_H * 2;
+            
             $b_ion_n = ($i - 1);
             $y_ion_n = ($j - $i);
             
@@ -74,38 +89,39 @@ class Fragments extends Peptide
                 $array_frags["b$b_ion_n"] = $b_ion_mass;
                 if (strstr($this->frag_series, 'a'))
                     $array_frags["a$b_ion_n"] = $b_ion_mass - (12 + $this->mass_O);
+                /*
+                 * amonia loss
+                 */
+                if (strstr($this->frag_decay, 'a')) {
+                    if (preg_grep('/R|K|Q|N/', array_slice($array_seq['aa'], 1, $i)))
+                        $array_frags["b$b_ion_n" . "-a"] = $array_frags["b$b_ion_n"] - $amonia;
+                }
+                /*
+                 * water loss
+                 */
+                if (strstr($this->frag_decay, 'a')) {
+                    if (preg_grep('/S|T|E|D/', array_slice($array_seq['aa'], 1, $i)))
+                        $array_frags["b$b_ion_n" . "-w"] = $array_frags["b$b_ion_n"] - $water;
+                }
             }
             
-            if ($y_ion_n > 0 && $y_ion_n < ($j - 1))
+            if ($y_ion_n > 0 && $y_ion_n < ($j - 1)) {
                 $array_frags["y$y_ion_n"] = ($peptide_nmass - $b_ion_mass) + $this->mass_H * 2;
-            
-            $b_ion_im_aa = $array_seq['aa'][$i];
-            $b_ion_im_mz = $array_seq['mass'][$i];
-            
-            if (strstr("HILFPWY", $b_ion_im_aa)) {
-                $b_ion_im_aa = str_replace("I", "L", $b_ion_im_aa);
-                $array_frags[$b_ion_im_aa . "1"] = $b_ion_im_mz - (12 + $this->mass_O) + $this->mass_proton;
+                /*
+                 * amonia loss
+                 */
+                if (strstr($this->frag_decay, 'a')) {
+                    if (preg_grep('/R|K|Q|N/', array_slice($array_seq['aa'], $i)))
+                        $array_frags["y$y_ion_n" . "-a"] = $array_frags["y$y_ion_n"] - $amonia;
+                }
+                /*
+                 * water loss
+                 */
+                if (strstr($this->frag_decay, 'a')) {
+                    if (preg_grep('/S|T|E|D/', array_slice($array_seq['aa'], $i)))
+                        $array_frags["y$y_ion_n" . "-w"] = $array_frags["y$y_ion_n"] - $water;
+                }
             }
-        }
-        
-        /*
-         * meta-stable decay ions
-         */
-        foreach ($array_frags as $n => $v) {
-            
-            if (preg_match("/[czaA-Z]\d/", $n))
-                continue;
-            
-            if (strstr($n, "y") and strstr($this->frag_series, 'z'))
-                $array_frags[str_replace('y', 'z', $n)] = $v - ($this->mass_H * 2 + $this->mass_N);
-            
-            if (strstr($n, "b") and strstr($this->frag_series, 'c'))
-                $array_frags[str_replace('b', 'c', $n)] = $v + ($this->mass_H * 3 + $this->mass_N);
-            
-            if (strstr($this->frag_decay, 'a'))
-                $array_frags[$n . "-a"] = $v - ($this->mass_H * 3 + $this->mass_N);
-            if (strstr($this->frag_decay, 'w'))
-                $array_frags[$n . "-w"] = $v - ($this->mass_H * 2 + $this->mass_O);
         }
         
         /*
@@ -116,12 +132,20 @@ class Fragments extends Peptide
             if (preg_match("/[czaA-Z]\d/", $n))
                 continue;
             
-            if (! preg_match("/a|w/", $n)) {
-                if (strstr($this->frag_charge, 2))
-                    $array_frags[$n . " 2+"] = ($v + $this->mass_proton) / 2;
-                if (strstr($this->frag_charge, 3))
-                    $array_frags[$n . " 3+"] = ($v + $this->mass_proton) / 3;
-            }
+            if (preg_match("/a|w/", $n))
+                continue;
+            
+            if (strstr($n, "y") and strstr($this->frag_series, 'z'))
+                $array_frags[str_replace('y', 'z', $n)] = $v - ($this->mass_H * 2 + $this->mass_N);
+            
+            if (strstr($n, "b") and strstr($this->frag_series, 'c'))
+                $array_frags[str_replace('b', 'c', $n)] = $v + ($this->mass_H * 3 + $this->mass_N);
+            
+            if (strstr($this->frag_charge, '2'))
+                $array_frags[$n . " 2+"] = ($v + $this->mass_proton) / 2;
+            
+            if (strstr($this->frag_charge, '3'))
+                $array_frags[$n . " 3+"] = ($v + $this->mass_proton) / 3;
         }
         
         asort($array_frags);
@@ -136,7 +160,7 @@ class Fragments extends Peptide
          * remove values with highly variable mass defect differences
          */
         $array = array_filter($array, function ($x) {
-            return ($x > 224);
+            return ($x > 240 & $x < 1800);
         });
         
         return array_map(array(
@@ -145,23 +169,23 @@ class Fragments extends Peptide
         ), $array);
     }
 
-    public function massToHash($float, $z_detect = true)
+    public function massToHash($float, $z_detect = false)
     {
         if (is_true($z_detect)) {
-            $hash = round(($float - $this->m_int) / $this->m_slp / 50) * 50;
-            if (preg_match("/50$/", $hash))
-                $hash = $hash * 2 - 7800;
+            $int = round(($float * $this->m_slp + $this->m_int) * 2) / 2;
+            if (! is_int($int))
+                $int = round((chargeMass(neutralMass($float, 2), 1) * $this->m_slp + $this->m_int));
         } else {
-            $hash = round(($float - $this->m_int) / $this->m_slp / 100) * 100;
+            $int = round(($float * $this->m_slp + $this->m_int));
         }
         // echo "WTF " . $hash . PHP_EOL;
-        return base26_encode($hash);
+        return base26_encode($int);
     }
 
     public function hashToMass($hash)
     {
         $int = base26_decode($hash);
-        return $int * $this->m_slp + $this->m_int;
+        return ($int - $this->m_int) / $this->m_slp;
     }
 }
 
