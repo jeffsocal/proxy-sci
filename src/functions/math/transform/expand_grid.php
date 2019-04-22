@@ -10,29 +10,37 @@
 /*
  *
  */
+use function BenTools\CartesianProduct\cartesian_product;
+
 function expand_grid($arrays)
 {
-    $arrays = cartesian_product($arrays);
+    $array_eg = [];
+    for($i = 0; $i < count($arrays); $i++){
+        $array_eg[] = $arrays;
+    }
     
-    $n = count($arrays);
+    $array_eg = cartesian_product($array_eg)->asArray();
+    
+    $n = count($array_eg);
     
     for ($i = 0; $i < $n; $i ++) {
-        $pair = $arrays[$i];
-        unset($arrays[$i]);
+        $pair = $array_eg[$i];
+        unset($array_eg[$i]);
         
         if ($pair[0] == $pair[1]) {
             continue;
         }
-        if (trim($pair[0]) == '' or trim($pair[1]) == '') {
-            continue;
-        }
+//         if (trim($pair[0]) == '' or trim($pair[1]) == '') {
+//             continue;
+//         }
         
+        $pair = array_unique($pair);
         sort($pair);
         
-        $arrays[array_tostring($pair, '-', '')] = $pair;
+        $array_eg[array_tostring($pair, '-', '')] = $pair;
     }
     
-    return array_values($arrays);
+    return array_values($array_eg);
 }
 
 ?>
