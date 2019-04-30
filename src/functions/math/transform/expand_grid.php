@@ -14,11 +14,12 @@ use function BenTools\CartesianProduct\cartesian_product;
 
 function expand_grid($arrays)
 {
-    // $array_eg = [];
-    // for($i = 0; $i < count($arrays); $i++){
-    // $array_eg[] = $arrays;
-    // }
-    $array_eg = cartesian_product($arrays)->asArray();
+    $array_eg = [];
+    for($i = 0; $i < count($arrays); $i++){
+        $array_eg[] = $arrays;
+    }
+    
+    $array_eg = cartesian_product($array_eg)->asArray();
     
     $n = count($array_eg);
     
@@ -26,12 +27,12 @@ function expand_grid($arrays)
         $pair = $array_eg[$i];
         unset($array_eg[$i]);
         
-        // if ($pair[0] == $pair[1]) {
-        // continue;
-        // }
-        // if (trim($pair[0]) == '' or trim($pair[1]) == '') {
-        // continue;
-        // }
+        if ($pair[0] == $pair[1]) {
+            continue;
+        }
+//         if (trim($pair[0]) == '' or trim($pair[1]) == '') {
+//             continue;
+//         }
         
         $pair = array_unique($pair);
         sort($pair);
