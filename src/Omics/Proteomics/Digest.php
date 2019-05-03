@@ -114,7 +114,7 @@ class Digest extends Protein
                     break;
             }
         }
-        for ($n = 0; $n < $this->missed_clevage_max; $n ++) {
+        for ($n = 0; $n < min(count($array_peptides), $this->missed_clevage_max); $n ++) {
             if (preg_match("/^M/", $array_peptides[$n]))
                 $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
         }
