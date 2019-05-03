@@ -19,7 +19,7 @@ function array_rmna($array)
             unset($array[$n]);
         }
     }
-    return $array;
+    return array_values($array);
 }
 
 ?>

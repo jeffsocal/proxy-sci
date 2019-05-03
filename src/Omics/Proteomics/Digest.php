@@ -11,57 +11,68 @@ namespace ProxySci\Omics\Proteomics;
 class Digest extends Protein
 {
 
-    private $lengthUpperLimit;
+    private $length_upper_limit;
 
-    private $lengthLowerLimit;
+    private $length_lower_limit;
 
-    public function __construct($lengthLowerLimit = 6, $lengthUpperLimit = 36)
+    private $mass_upper_limit;
+
+    private $mass_lower_limit;
+
+    private $missed_clevage_max;
+
+    private $enzyme_regex;
+
+    private $Peptide;
+
+    public function __construct($missed_clevage_max = 2)
     {
         parent::__construct();
-        $this->setLengthLimits($lengthLowerLimit, $lengthUpperLimit);
+        $this->setLengthLimits();
+        $this->setMassLimits();
+        $this->setMissedClevageMax();
+        $this->setEnzymeRegex();
+        
+        $this->Peptide = new Peptide();
     }
 
-    private function setLengthLimits($low, $high)
+    public function setEnzymeRegex($regex = "/.*?[KR\#]/")
     {
-        $this->lengthLowerLimit = $low;
-        $this->lengthUpperLimit = $high;
+        $this->enzyme_regex = $regex;
+    }
+
+    public function setLengthLimits($low = 6, $high = 53)
+    {
+        $this->length_lower_limit = $low;
+        $this->length_upper_limit = $high;
+    }
+
+    public function setMissedClevageMax($missed_clevage_max = 2)
+    {
+        $this->missed_clevage_max = $missed_clevage_max + 1;
+    }
+
+    public function setMassLimits($low = 600, $high = 6000)
+    {
+        $this->mass_lower_limit = $low;
+        $this->mass_upper_limit = $high;
     }
 
     public function getPeptides($sequence, $sub_il = FALSE)
     {
-        
         $sequence = preg_replace("/[\n\r\t\s\.\-\*]/", '', $sequence);
         
-        if(is_true($sub_il))
+        if (is_true($sub_il))
             $sequence = preg_replace("/L/", "I", $sequence);
         
         /*
          * get all regular peptides
          */
-        preg_match_all("/.*?[K|R]/", $sequence, $peptides);
+        preg_match_all($this->enzyme_regex, $sequence . "#", $peptides);
+        $peptides = preg_replace("/\#/", "", $peptides[0]);
         
-        /*
-         * get the last non-specific tryptic peptide and add it to the end of the list
-         */
-        preg_match_all("/.*?[K|R]/", strrev($sequence), $peptides_rev);
-        
-        //
-        if (key_exists(0, $peptides_rev[0])) {
-            $peptides_rev = strrev(preg_replace("/[K|R]/", "", $peptides_rev[0][0]));
-            if ($peptides_rev != "")
-                $peptides[0][] = $peptides_rev;
-        }
-        
-        if (sizeof($peptides[0]) == 0) {
-            /*
-             * systemError("Low Peptide Count: $i");
-             */
-            $peptides = array(
-                $sequence
-            );
-        } else {
-            $peptides = $peptides[0];
-        }
+        // print_r($peptides);
+        // exit;
         
         //
         $i = sizeof($peptides);
@@ -70,24 +81,44 @@ class Digest extends Protein
         
         $s = 0;
         for ($n = 0; $n < $i; $n ++) {
+            
+            $keep = 'keep';
             $concat_peptide .= $peptides[$n];
-            $stl = strlen($concat_peptide);
-            if ($stl <= $this->lengthUpperLimit) {
-                if ($stl >= $this->lengthLowerLimit) {
+            
+            $mass = $this->Peptide->getMolecularWeight($concat_peptide);
+            $leng = strlen($concat_peptide);
+            
+            if ($mass < $this->mass_lower_limit || $leng < $this->length_lower_limit)
+                $keep = 'null';
+            
+            if ($mass > $this->mass_upper_limit || $leng > $this->length_upper_limit)
+                $keep = 'reject';
+            
+            if ($s >= $this->missed_clevage_max)
+                $keep = 'reject';
+            
+            switch ($keep) {
+                case 'keep':
                     $array_peptides[] = $concat_peptide;
-                }
-                $s ++;
-            } else {
-                $concat_peptide = "";
-                $n -= $s;
-                $s = 0;
-            }
-            if ($n == $i - 1 and $s != 0) {
-                $concat_peptide = "";
-                $n -= ($s - 1);
-                $s = 0;
+                    $s ++;
+                    break;
+                
+                case 'null':
+                    $s ++;
+                    break;
+                
+                case 'reject':
+                    $concat_peptide = "";
+                    $n -= $s;
+                    $s = 0;
+                    break;
             }
         }
+        for ($n = 0; $n < $this->missed_clevage_max; $n ++) {
+            if (preg_match("/^M/", $array_peptides[$n]))
+                $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
+        }
+        
         return $array_peptides;
     }
 }

@@ -13,7 +13,9 @@
 function array_min($array)
 {
     $array = array_rmna($array);
-    
+    if (sizeof($array) == 0) {
+        return false;
+    }
     return min($array);
 }
 
