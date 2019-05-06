@@ -22,6 +22,7 @@ function table_summary($table_array)
         $new_table['unique'][] = count(array_unique($values));
         $new_table['max'][] = array_max(array_unique($values));
         $new_table['median'][] = array_median(array_unique($values));
+        $new_table['mean'][] = array_mean(array_unique($values));
         $new_table['min'][] = array_min(array_unique($values));
     }
     
