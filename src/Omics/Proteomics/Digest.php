@@ -119,7 +119,7 @@ class Digest extends Protein
                 $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
         }
         
-        return $array_peptides;
+        return unique($array_peptides);
     }
 }
 ?>
