@@ -113,7 +113,20 @@ class Digest extends Protein
                     $s = 0;
                     break;
             }
+            
+            /*
+             * capture end of the protein
+             */
+            if ($n == ($i - 1) and $s > 0) {
+                $concat_peptide = "";
+                $n -= ($s - 1);
+                $s = 0;
+            }
         }
+        
+        /*
+         * capture the methionine removal
+         */
         for ($n = 0; $n < min(count($array_peptides), $this->missed_clevage_max); $n ++) {
             if (preg_match("/^M/", $array_peptides[$n]))
                 $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
