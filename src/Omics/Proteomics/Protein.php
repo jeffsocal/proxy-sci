@@ -22,10 +22,14 @@ class Protein extends Peptide
         parent::__construct();
     }
 
-    private function calculateCoverage($protein, $peptides = [])
+    function calculateCoverage(string $protein, array $peptides = [])
     {
         $this->proteinSeqBitMap = array_fill(0, strlen($protein), 0);
         $peptides = array_values(array_unique($peptides));
+        
+        $peptides = preg_replace("/I/", "L", $peptides);
+        $protein = preg_replace("/I/", "L", $protein);
+        
         
         $i = sizeof($peptides);
         for ($n = 0; $n < $i; $n ++) {
@@ -43,7 +47,9 @@ class Protein extends Peptide
             if ($this->proteinSeqBitMap[$n] != 0)
                 $s ++;
         }
-        $this->proteinSeqCoverage = truncate(($s / $i) * 100, 2);
+        $this->proteinSeqCoverage = ($s / $i);
+        
+        return ($this->proteinSeqCoverage);
     }
 
     private function htmlCoverageMap($protein)
@@ -85,7 +91,7 @@ class Protein extends Peptide
         $this->calculateCoverage($protein, $peptides);
         $this->htmlCoverageMap($protein);
         
-        $out['coverage'] = $this->proteinSeqCoverage;
+        $out['coverage'] = truncate($this->proteinSeqCoverage * 100, 2);
         $out['html'] = '<div class="sequence">' . $this->proteinSeqHTML . "</div>";
         
         return $out;
