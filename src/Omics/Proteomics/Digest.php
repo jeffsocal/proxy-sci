@@ -30,7 +30,7 @@ class Digest extends Protein
         parent::__construct();
         $this->setLengthLimits();
         $this->setMassLimits();
-        $this->setMissedClevageMax();
+        $this->setMissedClevageMax($missed_clevage_max);
         $this->setEnzymeRegex();
         
         $this->Peptide = new Peptide();
@@ -64,62 +64,46 @@ class Digest extends Protein
         
         if (is_true($sub_il))
             $sequence = preg_replace("/L/", "I", $sequence);
-        
-        /*
-         * get all regular peptides
-         */
-        preg_match_all($this->enzyme_regex, $sequence . "#", $peptides);
-        $peptides = preg_replace("/\#/", "", $peptides[0]);
-        
-        // print_r($peptides);
-        // exit;
-        
-        //
-        $i = sizeof($peptides);
-        $concat_peptide = "";
-        $array_peptides = array();
-        
-        $s = 0;
-        for ($n = 0; $n < $i; $n ++) {
             
-            $keep = 'keep';
-            $concat_peptide .= $peptides[$n];
+            /*
+             * get all regular peptides
+             */
+            preg_match_all($this->enzyme_regex, $sequence . "#", $peptides);
+            $peptides = preg_replace("/\#/", "", $peptides[0]);
             
-            $mass = $this->Peptide->getMolecularWeight($concat_peptide);
-            $leng = strlen($concat_peptide);
+            // print_r($peptides);
+            // exit;
             
-            if ($mass < $this->mass_lower_limit || $leng < $this->length_lower_limit)
-                $keep = 'null';
+            //
+            $i = sizeof($peptides);
+            $concat_peptide = "";
+            $array_peptides = array();
             
-            if ($mass > $this->mass_upper_limit || $leng > $this->length_upper_limit)
-                $keep = 'reject';
-            
-            if ($s >= $this->missed_clevage_max)
-                $keep = 'reject';
-            
-            switch ($keep) {
-                case 'keep':
-                    $array_peptides[] = $concat_peptide;
-                    $s ++;
-                    break;
+            $s = 0;
+            for ($n = 0; $n < $i; $n ++) {
                 
-                case 'null':
-                    $s ++;
-                    break;
-                
-                case 'reject':
-                    $concat_peptide = "";
-                    $n -= $s;
-                    $s = 0;
-                    break;
+                for ($mc = 0; $mc <= $this->missed_clevage_max; $mc ++) {
+                    
+                    $concat_peptide = array_tostring(array_slice($peptides, $n, $mc), '', '');
+                    
+                    $leng = strlen($concat_peptide);
+                    $mass = $this->Peptide->getMolecularWeight($concat_peptide);
+                    
+                    if ($mass < $this->mass_lower_limit || $leng < $this->length_lower_limit)
+                        continue;
+                        
+                        if ($mass > $this->mass_upper_limit || $leng > $this->length_upper_limit)
+                            break;
+                            
+                            $array_peptides[] = $concat_peptide;
+                }
             }
-        }
-        for ($n = 0; $n < min(count($array_peptides), $this->missed_clevage_max); $n ++) {
-            if (preg_match("/^M/", $array_peptides[$n]))
-                $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
-        }
-        
-        return array_unique($array_peptides);
+            for ($n = 0; $n < min(count($array_peptides), $this->missed_clevage_max); $n ++) {
+                if (preg_match("/^M/", $array_peptides[$n]))
+                    $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
+            }
+            
+            return array_unique($array_peptides);
     }
 }
 ?>

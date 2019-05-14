@@ -17,6 +17,7 @@ function table_summary($table_array)
     $new_table = [];
     foreach ($table_cols as $table_col) {
         $values = $table_array[$table_col];
+        
         $new_table['column'][] = $table_col;
         $new_table['n'][] = count($values);
         $new_table['unique'][] = count(array_unique($values));

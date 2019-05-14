@@ -13,6 +13,8 @@ use ProxyTime\ProgressTimer;
 class Fasta
 {
 
+    private $fasta_file_name;
+
     private $fasta_file_path;
 
     private $regex_array;
@@ -21,6 +23,7 @@ class Fasta
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
         $this->fasta_file_path = $ini['fasta_path'];
+        $this->fasta_file_name = preg_replace("/.*\//", "", $this->fasta_file_path);
         
         $source_regex = 'uniprot';
         if (preg_match("/uniref/", $source))
@@ -38,6 +41,11 @@ class Fasta
         return $this->fasta_file_path;
     }
 
+    function getFastaName()
+    {
+        return $this->fasta_file_name;
+    }
+
     function parseFastaEntry($entry)
     {
         $array = array();
@@ -51,6 +59,7 @@ class Fasta
             if (key_exists(0, $regex))
                 $array[$regex_var] = trim(preg_replace('/\w+\=|\n/', '', $regex[0]));
         }
+        $array['source'] = $this->fasta_file_name;
         return $array;
     }
 
