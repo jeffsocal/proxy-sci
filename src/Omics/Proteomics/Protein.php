@@ -15,7 +15,9 @@ class Protein extends Peptide
 
     private $proteinCoverage;
 
-    private $proteinHTML;
+    private $proteinSeqHTML;
+
+    private $proteinSeqSTR;
 
     function __construct()
     {
@@ -29,7 +31,6 @@ class Protein extends Peptide
         
         $peptides = preg_replace("/I/", "L", $peptides);
         $protein = preg_replace("/I/", "L", $protein);
-        
         
         $i = sizeof($peptides);
         for ($n = 0; $n < $i; $n ++) {
@@ -82,17 +83,41 @@ class Protein extends Peptide
             $this->proteinSeqHTML .= $aa;
             
             if (($n + 1) % 60 === 0)
-                $this->proteinSeqHTML .= "<br>\n";
+                $this->proteinSeqHTML .= "<br>";
         }
     }
 
-    function getCoverage($protein, $peptides = [])
+    private function binaryCoverageMap($protein)
+    {
+        preg_match_all("/[a-z]/", strtolower($protein), $proteinBit);
+        
+        $max_hits = array_max($this->proteinSeqBitMap);
+        
+        $this->proteinSeqSTR = '';
+        foreach ($proteinBit[0] as $n => $aa) {
+            
+            if ($this->proteinSeqBitMap[$n] > 0)
+                $aa = strtoupper($aa);
+            
+            $this->proteinSeqSTR .= $aa;
+        }
+    }
+
+    function getCoverage(string $protein, array $peptides = [], bool $as_html = FALSE)
     {
         $this->calculateCoverage($protein, $peptides);
-        $this->htmlCoverageMap($protein);
         
-        $out['coverage'] = truncate($this->proteinSeqCoverage * 100, 2);
-        $out['html'] = '<div class="sequence">' . $this->proteinSeqHTML . "</div>";
+        $map = '';
+        if ($as_html == TRUE) {
+            $this->htmlCoverageMap($protein);
+            $map = '<div style="font-family: Courier;">' . $this->proteinSeqHTML . "</div>";
+        } else {
+            $this->binaryCoverageMap($protein);
+            $map = $this->proteinSeqSTR;
+        }
+        
+        $out['coverage'] = truncate($this->proteinSeqCoverage, 5);
+        $out['map'] = $map;
         
         return $out;
     }
