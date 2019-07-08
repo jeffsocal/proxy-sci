@@ -83,7 +83,7 @@ class Protein extends Peptide
             $this->proteinSeqHTML .= $aa;
             
             if (($n + 1) % 60 === 0)
-                $this->proteinSeqHTML .= "<br>";
+                $this->proteinSeqHTML .= "<br>\n";
         }
     }
 
@@ -110,13 +110,13 @@ class Protein extends Peptide
         $map = '';
         if ($as_html == TRUE) {
             $this->htmlCoverageMap($protein);
-            $map = '<div style="font-family: Courier;">' . $this->proteinSeqHTML . "</div>";
+            $map = '<div class="sequence">' . $this->proteinSeqHTML . "</div>";
         } else {
             $this->binaryCoverageMap($protein);
             $map = $this->proteinSeqSTR;
         }
         
-        $out['coverage'] = truncate($this->proteinSeqCoverage, 5);
+        $out['coverage'] = truncate($this->proteinSeqCoverage * 100, 2);
         $out['map'] = $map;
         
         return $out;

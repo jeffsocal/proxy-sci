@@ -64,46 +64,84 @@ class Digest extends Protein
         
         if (is_true($sub_il))
             $sequence = preg_replace("/L/", "I", $sequence);
+        
+        if ($this->enzyme_regex == "." || $this->enzyme_regex == "/./")
+            return $this->nonspecificPeptides($sequence);
+        
+        /*
+         * get all regular peptides
+         */
+        preg_match_all($this->enzyme_regex, $sequence . "#", $peptides);
+        
+        if(sizeof($peptides[0]) == 0)
+            return FALSE;
+        
+        $peptides = preg_replace("/\#/", "", $peptides[0]);
+        
+        // print_r($peptides);
+        // exit;
+        
+        //
+        $i = sizeof($peptides);
+        $concat_peptide = "";
+        $array_peptides = array();
+        
+        $s = 0;
+        for ($n = 0; $n < $i; $n ++) {
             
-            /*
-             * get all regular peptides
-             */
-            preg_match_all($this->enzyme_regex, $sequence . "#", $peptides);
-            $peptides = preg_replace("/\#/", "", $peptides[0]);
-            
-            // print_r($peptides);
-            // exit;
-            
-            //
-            $i = sizeof($peptides);
-            $concat_peptide = "";
-            $array_peptides = array();
-            
-            $s = 0;
-            for ($n = 0; $n < $i; $n ++) {
+            for ($mc = 0; $mc <= $this->missed_clevage_max; $mc ++) {
                 
-                for ($mc = 0; $mc <= $this->missed_clevage_max; $mc ++) {
-                    
-                    $concat_peptide = array_tostring(array_slice($peptides, $n, $mc), '', '');
-                    
-                    $leng = strlen($concat_peptide);
-                    $mass = $this->Peptide->getMolecularWeight($concat_peptide);
-                    
-                    if ($mass < $this->mass_lower_limit || $leng < $this->length_lower_limit)
-                        continue;
-                        
-                        if ($mass > $this->mass_upper_limit || $leng > $this->length_upper_limit)
-                            break;
-                            
-                            $array_peptides[] = $concat_peptide;
-                }
+                $concat_peptide = array_tostring(array_slice($peptides, $n, $mc), '', '');
+                
+                $leng = strlen($concat_peptide);
+                $mass = $this->Peptide->getMolecularWeight($concat_peptide);
+                
+                if ($mass < $this->mass_lower_limit || $leng < $this->length_lower_limit)
+                    continue;
+                
+                if ($mass > $this->mass_upper_limit || $leng > $this->length_upper_limit)
+                    break;
+                
+                $array_peptides[] = $concat_peptide;
             }
-            for ($n = 0; $n < min(count($array_peptides), $this->missed_clevage_max); $n ++) {
-                if (preg_match("/^M/", $array_peptides[$n]))
-                    $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
-            }
+        }
+        for ($n = 0; $n < min(count($array_peptides), $this->missed_clevage_max); $n ++) {
+            if (preg_match("/^M/", $array_peptides[$n]))
+                $array_peptides[] = preg_replace("/^M/", '', $array_peptides[$n]);
+        }
+        
+        return array_unique($array_peptides);
+    }
+
+    private function nonspecificPeptides($sequence)
+    {
+        preg_match_all("/./", $sequence, $aa);
+        $aa = $aa[0];
+        $l = count($aa);
+        $n = 0;
+        $array_peptides = array();
+        for ($i = 0; $i < $l; $i ++) {
+            if ($i > $l - $this->length_upper_limit)
+                break;
             
-            return array_unique($array_peptides);
+            for ($j = $this->length_lower_limit; $j <= $this->length_upper_limit; $j ++) {
+                
+                $n ++;
+                $concat_peptide = array_tostring(array_slice($aa, $i, $j), '', '');
+                $leng = strlen($concat_peptide);
+                $mass = $this->Peptide->getMolecularWeight($concat_peptide);
+                
+                if ($mass < $this->mass_lower_limit || $leng < $this->length_lower_limit)
+                    continue;
+                
+                if ($mass > $this->mass_upper_limit || $leng > $this->length_upper_limit)
+                    break;
+                
+                $array_peptides[] = $concat_peptide;
+            }
+        }
+        
+        return array_unique($array_peptides);
     }
 }
 ?>
