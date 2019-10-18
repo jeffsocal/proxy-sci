@@ -25,6 +25,10 @@ function table_summary($table_array)
         $new_table['median'][] = array_median(array_unique($values));
         $new_table['mean'][] = array_mean(array_unique($values));
         $new_table['min'][] = array_min(array_unique($values));
+        $new_table['q25'][] = array_quantile(array_unique($values), 0.25);
+        $new_table['q75'][] = array_quantile(array_unique($values), 0.75);
+        $new_table['q005'][] = array_quantile(array_unique($values), 0.005);
+        $new_table['q995'][] = array_quantile(array_unique($values), 0.995);
     }
     
     return $new_table;
