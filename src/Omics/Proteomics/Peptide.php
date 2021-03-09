@@ -21,7 +21,7 @@ class Peptide extends ReadDelim
     protected $mass_H;
 
     protected $mass_O;
-    
+
     protected $mass_N;
 
     protected $array_aa_data;
@@ -40,33 +40,33 @@ class Peptide extends ReadDelim
     {
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
         parent::__construct(get_include_path() . $ini['aminos_path']);
-        
+
         $this->atom = new Mass();
-        
+
         $this->array_aa_data = $this->getTableArray();
-        
+
         $this->mass_proton = 1.00727646688;
         $this->mass_isotope = 1.0025;
         $this->mass_H = $this->atom->getMolecularWeight('H');
         $this->mass_O = $this->atom->getMolecularWeight('O');
         $this->mass_N = $this->atom->getMolecularWeight('N');
-        
+
         $this->setExactMassAminoAcid();
     }
 
     //
     private function setExactMassAminoAcid()
     {
-        
+
         //
         $this->arr_aa_em = array();
-        
+
         //
         $water = $this->mass_O + $this->mass_H * 2;
         foreach ($this->array_aa_data['1_letter'] as $n => $l) {
             $this->arr_aa_em[$l] = $this->atom->getMolecularWeight($this->array_aa_data['Res_Formula'][$n]);
         }
-        
+
         // C3H7NO2Se - Selenocysteine
         $this->arr_aa_em['U'] = $this->atom->getMolecularWeight('C3H7NO2Se');
         $this->arr_aa_em['Z'] = $this->atom->getMolecularWeight('C3H7NO2Se');
@@ -78,7 +78,7 @@ class Peptide extends ReadDelim
         $this->arr_aa_em['c'] = $this->mass_O + $this->mass_H;
         $this->arr_aa_em['n'] = $this->mass_H;
         $this->arr_aa_em['p'] = $this->mass_proton;
-        
+
         // common PTMs
         // [C57.021]
         $this->arr_aa_em['z'] = $this->arr_aa_em['C'] + 57.021;
@@ -88,7 +88,7 @@ class Peptide extends ReadDelim
         $this->arr_aa_em['x'] = $this->arr_aa_em['K'] + 43.006;
         // [M15.995]
         $this->arr_aa_em['w'] = $this->arr_aa_em['M'] + 15.995;
-        
+
         /*
          * Ambiguous Amino Acids 3-Letter 1-Letter
          * Asparagine or aspartic acid Asx B -> N (CONVERSION FOR OMSSA DB SEARCH)
@@ -102,10 +102,10 @@ class Peptide extends ReadDelim
     {
         if (is_numeric($component))
             return $component;
-        
+
         if (key_exists($component, $this->arr_aa_em))
             return $this->arr_aa_em[$component];
-        
+
         return 0;
     }
 
@@ -117,10 +117,10 @@ class Peptide extends ReadDelim
     protected function getSeqArray($aa, $regex = "[A-Z]")
     {
         preg_match_all($regex, $aa, $aa_m);
-        
+
         if (! is_array($aa_m) or ! is_array($aa_m[0]))
             return false;
-        
+
         return $aa_m[0];
     }
 
@@ -128,12 +128,12 @@ class Peptide extends ReadDelim
     {
         $molecular_weight = 0;
         foreach ($this->getSeqArray('n' . $aa . 'c', $this->seq_regex) as $n => $v) {
-            
+
             foreach ($this->getSeqArray($v, $this->seq_mod_regex) as $nn => $vv) {
                 $molecular_weight += $this->getExactMass($vv);
             }
         }
-        
+
         return $molecular_weight;
     }
 
@@ -142,7 +142,7 @@ class Peptide extends ReadDelim
         $this_key = array_search($Aaa, $this->array_aa_data['3_letter']);
         if ($this_key == false)
             return false;
-        
+
         return $this->array_aa_data['1_letter'][$this_key];
     }
 }

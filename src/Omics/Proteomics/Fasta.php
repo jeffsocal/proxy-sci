@@ -21,6 +21,7 @@ class Fasta
 
     public function __construct($source = 'uniprot')
     {
+        
         $ini = parse_ini_file(get_include_path() . 'ini/molecular.ini');
         $this->fasta_file_path = $ini['fasta_path'];
         $this->fasta_file_name = preg_replace("/.*\//", "", $this->fasta_file_path);

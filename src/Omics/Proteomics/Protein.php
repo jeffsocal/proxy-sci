@@ -58,7 +58,7 @@ class Protein extends Peptide
         preg_match_all("/[A-Z]/", $protein, $proteinBit);
         
         $colors = [
-            '#A0A0A0',
+            '#F0F0F0',
             '#FFAA00',
             '#FF9900',
             '#FF8800',
